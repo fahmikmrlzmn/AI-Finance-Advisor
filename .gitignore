@@ -1,10 +1,16 @@
-# Node modules
-node_modules
+# Ignore node_modules in root (if any)
+node_modules/
 
-# Env files
-.env
-backend/.env
-frontend/.env
+# Ignore OS / editor files in root
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
 
-# Logs
-npm-debug.log*
+# Ignore everything in backend and frontend that is already ignored locally
+/backend/node_modules/
+/backend/.env
+/frontend/node_modules/
+/frontend/build/
+/frontend/dist/
+/frontend/.env*
