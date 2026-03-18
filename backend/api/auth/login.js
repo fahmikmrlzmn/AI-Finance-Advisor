@@ -1,42 +1,28 @@
-import { connectDB } from "@/utils/db"
-import User from "@/models/User"
-import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
+import connectDB from "../../utils/db";
+import User from "../../models/User";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+connectDB();
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).end();
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" })
-  }
-
-  await connectDB()
-
-  const { email, password } = req.body
+  const { email, password } = req.body;
 
   try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ msg: "User not found" });
 
-    const user = await User.findOne({ email })
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ msg: "Wrong password" });
 
-    if (!user) {
-      return res.status(400).json({ message: "User not found" })
-    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
 
-    const isMatch = await bcrypt.compare(password, user.password)
-
-    if (!isMatch) {
-      return res.status(400).json({ message: "Wrong password" })
-    }
-
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    )
-
-    res.status(200).json({ token })
-
+    res.json({ token });
   } catch (err) {
-    console.log(err)
-    res.status(500).json({ message: "Login error" })
+    res.status(500).json({ message: "Login error" });
   }
 }

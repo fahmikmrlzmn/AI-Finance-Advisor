@@ -1,24 +1,17 @@
-const mongoose = require("mongoose")
+import jwt from "jsonwebtoken";
 
-const TransactionSchema = new mongoose.Schema({
+export default function authMiddleware(req, res) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader)
+    return res.status(401).json({ message: "No token provided" });
 
-  user:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:"User"
-  },
-
-  text:{
-    type:String,
-    required:true
-  },
-
-  amount:{
-    type:Number,
-    required:true
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    return true;
+  } catch (err) {
+    res.status(401).json({ message: "Invalid token" });
+    return false;
   }
-
-},{
-  timestamps:true
-})
-
-module.exports = mongoose.model("Transaction",TransactionSchema)
+}

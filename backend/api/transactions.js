@@ -1,50 +1,24 @@
-import { connectDB } from "@/utils/db"
-import Transaction from "@/models/Transaction"
-import jwt from "jsonwebtoken"
+import connectDB from "../utils/db";
+import Transaction from "../models/Transaction";
+import authMiddleware from "../middleware/authMiddleware";
 
-function getUser(req) {
-  const authHeader = req.headers.authorization
-
-  if (!authHeader) return null
-
-  const token = authHeader.split(" ")[1]
-
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET)
-  } catch {
-    return null
-  }
-}
+connectDB();
 
 export default async function handler(req, res) {
-
-  await connectDB()
-
-  const user = getUser(req)
-
-  if (!user) {
-    return res.status(401).json({ message: "Unauthorized" })
-  }
+  if (!authMiddleware(req, res)) return;
 
   if (req.method === "GET") {
-
-    const transactions = await Transaction.find({ user: user.id })
-    return res.json(transactions)
-
-  }
-
-  if (req.method === "POST") {
-
-    const { text, amount } = req.body
-
+    const transactions = await Transaction.find({ user: req.user.id });
+    res.json(transactions);
+  } else if (req.method === "POST") {
+    const { text, amount } = req.body;
     const transaction = await Transaction.create({
-      user: user.id,
+      user: req.user.id,
       text,
-      amount
-    })
-
-    return res.json(transaction)
+      amount,
+    });
+    res.json(transaction);
+  } else {
+    res.status(405).end();
   }
-
-  res.status(405).json({ message: "Method not allowed" })
 }
